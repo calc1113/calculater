@@ -1,1 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة التعويض المرنة عن التأخير</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 22px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            font-size: 15px;
+        }
+        input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            -webkit-appearance: none; /* لحل مشاكل العرض في الآيفون */
+        }
+        button {
+            width: 100%;
+            background-color: #27ae60;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            -webkit-appearance: none;
+        }
+        button:hover {
+            background-color: #219150;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #eef9f1;
+            border-right: 5px solid #27ae60;
+            border-radius: 4px;
+            display: none;
+        }
+        .result-item {
+            margin-bottom: 12px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .result-item span {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .error {
+            color: #c0392b;
+            background-color: #fce4d6;
+            border-right: 5px solid #c0392b;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            display: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <h2>حاسبة التعويض المرنة عن التأخير</h2>
+    
+    <div class="form-group">
+        <label for="amount">المبلغ الإجمالي (ريال):</label>
+        <input type="number" id="amount" placeholder="أدخل مبلغ العقد" min="0">
+    </div>
+
+    <div class="form-group">
+        <label for="rate">نسبة التعويض السنوية (%):</label>
+        <input type="number" id="rate" placeholder="أدخل النسبة مثل: 7 أو 8" min="0" step="0.01" value="7">
+    </div>
+
+    <div class="form-group">
+        <label for="expectedDate">تاريخ التسليم المفترض (المخطط له):</label>
+        <input type="date" id="expectedDate">
+    </div>
+
+    <div class="form-group">
+        <label for="actualDate">تاريخ التسليم الفعلي:</label>
+        <input type="date" id="actualDate">
+    </div>
+
+    <button onclick="calculateCompensation()">احسب التعويض</button>
+
+    <div id="errorBox" class="error"></div>
+
+    <div id="resultBox" class="result-box">
+        <div class="result-item">عدد أيام التأخير: <span id="daysCount">0</span> يوم</div>
+        <div class="result-item">النسبة السنوية المعتمدة: <span id="appliedRate">0</span>%</div>
+        <div class="result-item">نسبة التعويض اليومية الموازية: <span id="dailyRate">0</span>%</div>
+        <div class="result-item">إجمالي قيمة التعويض: <span id="compensationAmount">0</span> ريال سـعودي</div>
+    </div>
+</div>
+
+<script>
+    function calculateCompensation() {
+        var amount = parseFloat(document.getElementById('amount').value);
+        var inputRate = parseFloat(document.getElementById('rate').value);
+        var expectedDateStr = document.getElementById('expectedDate').value;
+        var actualDateStr = document.getElementById('actualDate').value;
+        
+        var errorBox = document.getElementById('errorBox');
+        var resultBox = document.getElementById('resultBox');
+        
+        errorBox.style.display = "none";
+        resultBox.style.display = "none";
+
+        if (isNaN(amount) || amount <= 0 || isNaN(inputRate) || inputRate <= 0 || !expectedDateStr || !actualDateStr) {
+            errorBox.innerText = "الرجاء إدخال جميع الحقول بشكل صحيح.";
+            errorBox.style.display = "block";
+            return;
+        }
+
+        // تحويل التواريخ بشكل متوافق مع كافة المتصفحات والهواتف
+        var expectedDate = new Date(expectedDateStr.replace(/-/g, "/"));
+        var actualDate = new Date(actualDateStr.replace(/-/g, "/"));
+
+        // حساب فرق الأيام بدقة
+        var timeDiff = actualDate.getTime() - expectedDate.getTime();
+        var daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (daysDiff <= 0) {
+            errorBox.innerText = "تاريخ التسليم الفعلي قبل أو يطابق التاريخ المفترض. لا يوجد تأخير!";
+            errorBox.style.display = "block";
+            return;
+        }
+
+        var annualRate = inputRate / 100;
+        var dailyRate = annualRate / 365;
+        var compensation = amount * dailyRate * daysDiff;
+
+        // عرض النتائج بأرقام عادية واضحة لتجنب مشاكل خطوط الجوالات
+        document.getElementById('daysCount').innerText = daysDiff;
+        document.getElementById('appliedRate').innerText = inputRate;
+        document.getElementById('dailyRate').innerText = (dailyRate * 100).toFixed(5);
+        document.getElementById('compensationAmount').innerText = compensation.toFixed(2);
+        
+        resultBox.style.display = "block";
+    }
+</script>
+
+</body>
+</html>
